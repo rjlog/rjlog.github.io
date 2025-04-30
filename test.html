@@ -23,17 +23,14 @@
 
     uint pcg() // Modified to use the global rng_state
     {
-        rng_state = rng_state * 747796405u + 2891336453u;
-        uint state = rng_state;
-        uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
-        return (word >> 22u) ^ word;
+        return 1u;
     }
 
     void main()
     {
         rng_state = uint(fc.y * resolution.x + fc.x); // Initialize per pixel
 
-        vec3 result = vec3(float(pcg()), float(pcg()), float(pcg())) / float(0xFFFFFFFFU);
+        vec3 result = vec3(float(pcg()), float(pcg()), float(pcg())) / 2.0;
 
         color = vec4(result, 1.0);
     }`
