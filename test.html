@@ -19,18 +19,18 @@
     out vec4 color;
     uniform vec2 resolution;
 
-    uint pcg(uint x)
+    int pcg(int x)
     {
-        uint state = x * 747796405u + 2891336453u;
-        uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+        int state = x * 747796405 + 2891336453;
+        int word = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
         return (word >> 22u) ^ word;
     }
 
     void main()
     {
-        vec3 result = vec3(pcg(uint(fc.y * resolution.x + fc.x))) / float(0xFFFFFFFFU);
+        vec3 result = vec3(pcg(int(fc.y * resolution.x + fc.x))) / float(0xFFFFFFFFU);
 
-        color = vec4(1.0, 0.0, 0.0,1.0);
+        color = vec4(result,1.0);
     }`
   const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
   const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
