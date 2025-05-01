@@ -21,7 +21,8 @@
     }`;
     const fragmentShaderSource = `#version 300 es
     #define fc gl_FragCoord
-    precision mediump float;
+    precision highp float;
+    precision highp int;
     out vec4 color;
     uniform vec2 resolution;
     uniform float time;
@@ -55,14 +56,15 @@
 
     function render(timestamp) {
         if (resized) {
+            resized = false;
             const size = getExactClientSize(canvas);
             canvas.width = Math.round(size.width * window.devicePixelRatio);
             canvas.height = Math.round(size.height * window.devicePixelRatio);
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
             gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
-            resized = false;
         }
         gl.uniform1f(timeUniform, timestamp % 1000);
+
         const primitiveType = gl.TRIANGLES;
         const offset = 0;
         const count = 6;
