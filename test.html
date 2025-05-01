@@ -15,22 +15,6 @@
     }`;
   const fragmentShaderSource = `#version 300 es
     #define fc gl_FragCoord
-    precision highp float;
-    precision highp int;
-    out vec4 color;
-    uniform vec2 resolution;
-
-    uint rng_state;
-
-    uint pcg(uint x)
-    {
-        uint state = x * 747796405u + 2891336453u;
-        uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
-        return (word >> 22u) ^ word;
-    }
-
-    void main()#version 300 es
-    #define fc gl_FragCoord
     precision mediump float;
     out vec4 color;
     uniform vec2 resolution;
