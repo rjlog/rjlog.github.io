@@ -1,23 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>RJ's test shader</title>
+</head>
 <style> body {margin: 0}</style>
 <script src="https://greggman.github.io/webgl-lint/webgl-lint.js"></script>
 <canvas style="width: 100%; height: 100%;"></canvas>
 <script type="text/javascript">
-  const canvas = document.querySelector('canvas');
-  const gl = canvas.getContext("webgl2", {antialias: false})
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  const alignment = 1;
-  gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
-  const vertexShaderSource = `#version 300 es
+    const canvas = document.querySelector('canvas');
+    const gl = canvas.getContext("webgl2", {antialias: false})
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    const alignment = 1;
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
+    const vertexShaderSource = `#version 300 es
     in vec2 position;
     void main() {
       gl_Position = vec4(position * 2.0 - 1.0, 0, 1.0);
     }`;
-  const fragmentShaderSource = `#version 300 es
+    const fragmentShaderSource = `#version 300 es
     #define fc gl_FragCoord
     precision mediump float;
     out vec4 color;
     uniform vec2 resolution;
+    uniform float time;
 
     uint rng_state;
 
@@ -30,84 +37,89 @@
 
     void main()
     {
-        vec3 result = vec3(pcg(uint(fc.y * resolution.x + fc.x))) / float(0xFFFFFFFFU);
+        vec2 seed = fc.xy;
+        seed += time;
+        vec3 result = vec3(pcg(uint(seed.y * resolution.x + seed.x))) / float(0xFFFFFFFFU);
         color = vec4(result,1.0);
     }`
-  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-  const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-  const program = createProgram(gl, vertexShader, fragmentShader);
-  gl.useProgram(program);
-  setPositions(program);
-  const resolutionUniformLocation = gl.getUniformLocation(program, 'resolution');
-  const draw = () => drawScene(resolutionUniformLocation);
-  window.onresize = draw;
-  draw()
+    const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+    const program = createProgram(gl, vertexShader, fragmentShader);
+    gl.useProgram(program);
+    setPositions(program);
+    const resolutionUniformLocation = gl.getUniformLocation(program, 'resolution');
+    const timeUniform = gl.getUniformLocation(program, "time");
+    let resized = true;
+    window.onresize = () => resized = true;
+    window.requestAnimationFrame(render)
 
-  function createShader(gl, type, source) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-    if (success) {
-      return shader;
+    function render(timestamp) {
+        if (resized) {
+            const size = getExactClientSize(canvas);
+            canvas.width = Math.round(size.width * window.devicePixelRatio);
+            canvas.height = Math.round(size.height * window.devicePixelRatio);
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+            resized = false;
+        }
+        gl.uniform1f(timeUniform, timestamp % 1000);
+        const primitiveType = gl.TRIANGLES;
+        const offset = 0;
+        const count = 6;
+        gl.drawArrays(primitiveType, offset, count);
+        window.requestAnimationFrame(render)
     }
-  }
 
-  function createProgram(gl, vertexShader, fragmentShader) {
-    const program = gl.createProgram();
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-    const success = gl.getProgramParameter(program, gl.LINK_STATUS);
-    if (success) {
-      return program;
+    function getExactClientSize(element) {
+        const rect = element.getBoundingClientRect();
+        const computedStyle = getComputedStyle(element);
+        const scaleX = rect.width / parseFloat(computedStyle.width);
+        const scaleY = rect.height / parseFloat(computedStyle.height);
+
+        const intrinsicWidth = rect.width / scaleX;
+        const intrinsicHeight = rect.height / scaleY;
+
+        return {width: intrinsicWidth, height: intrinsicHeight};
     }
-  }
 
-  function setPositions(program) {
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-      0.0, 0.0,
-      1.0, 0.0,
-      0.0, 1.0,
+    function createShader(gl, type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+        if (success) {
+            return shader;
+        }
+    }
 
-      1.0, 0.0,
-      1.0, 1.0,
-      0.0, 1.0,
-    ]), gl.STATIC_DRAW);
-    // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-    const positionLocation = gl.getAttribLocation(program, 'position');
-    const size = 2; // 2 components per iteration
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0; // 0 = move forward size * sizeof(type) each iteration to get the next position
-    let offset = 0; // start at the beginning of the buffer
-    gl.vertexAttribPointer(positionLocation, size, type, normalize, stride, offset);
-    gl.enableVertexAttribArray(positionLocation);
-  }
+    function createProgram(gl, vertexShader, fragmentShader) {
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        return program;
+    }
 
-  function drawScene(resolutionUniformLocation) {
-    const size = getIntrinsicSize(canvas);
-    canvas.width = Math.round(size.width * window.devicePixelRatio);
-    canvas.height = Math.round(size.height * window.devicePixelRatio);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
-    const primitiveType = gl.TRIANGLES;
-    const offset = 0;
-    const count = 6;
-    gl.drawArrays(primitiveType, offset, count);
-  }
+    function setPositions(program) {
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            0.0, 0.0,
+            1.0, 0.0,
+            0.0, 1.0,
 
-  function getIntrinsicSize(element) {
-    const rect = element.getBoundingClientRect();
-    const computedStyle = getComputedStyle(element);
-    const scaleX = rect.width / parseFloat(computedStyle.width);
-    const scaleY = rect.height / parseFloat(computedStyle.height);
-
-    const intrinsicWidth = rect.width / scaleX;
-    const intrinsicHeight = rect.height / scaleY;
-
-    return { width: intrinsicWidth, height: intrinsicHeight };
-  }
+            1.0, 0.0,
+            1.0, 1.0,
+            0.0, 1.0,
+        ]), gl.STATIC_DRAW);
+        // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+        const positionLocation = gl.getAttribLocation(program, 'position');
+        const size = 2; // 2 components per iteration
+        const type = gl.FLOAT;
+        const normalize = false;
+        const stride = 0; // 0 = move forward size * sizeof(type) each iteration to get the next position
+        let offset = 0; // start at the beginning of the buffer
+        gl.vertexAttribPointer(positionLocation, size, type, normalize, stride, offset);
+        gl.enableVertexAttribArray(positionLocation);
+    }
 </script>
