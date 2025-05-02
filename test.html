@@ -19,7 +19,7 @@
     const fragmentShaderSource = `#version 300 es
     #define fc gl_FragCoord
     #define OCTAVES 8
-    #define SCALE 10.0
+    #define SCALE 7.0
     precision highp float;
     precision highp int;
     out vec4 color;
@@ -28,7 +28,13 @@
 
     float pcg(vec2 p)
     {
-        uint i = uint(floor(p.y) * SCALE + floor(p.x));
+        uint i;
+        if (resolution.x > resolution.y)
+            i = uint(floor(p.y) * SCALE + floor(p.x));
+        else
+            i = uint(floor(p.y)+ floor(p.x) * SCALE);
+
+
         uint state = i * 747796405u + 2891336453u;
         uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
         return float((word >> 22u) ^ word) / float(0xffffffffu);
@@ -85,7 +91,7 @@
 
     void main()
     {
-        vec2 seed = fc.xy / resolution.x * SCALE;
+        vec2 seed = fc.xy / max(resolution.x, resolution.y) * SCALE;
         vec2 o, n;
         float f = pattern(seed, o, n);
         vec3 col = vec3(f, o.x, n.x);
