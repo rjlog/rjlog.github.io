@@ -16,10 +16,12 @@
     void main() {
       gl_Position = vec4(position * 2.0 - 1.0, 0, 1.0);
     }`;
+    const octaves = getSearchParams("octaves", "8");
+    const scale = getSearchParams("scale", "7.0");
     const fragmentShaderSource = `#version 300 es
     #define fc gl_FragCoord
-    #define OCTAVES 8
-    #define SCALE 7.0
+    #define OCTAVES ${octaves}
+    #define SCALE ${scale}
     precision highp float;
     precision highp int;
     out vec4 color;
@@ -81,10 +83,10 @@
     float pattern(vec2 p, out vec2 q, out vec2 r)
     {
         q = vec2( fbm(p + vec2(0.0,0.0)),
-                       fbm(p + vec2(5000.2-time/4.,10.3+time/4.)));
+                       fbm(p + vec2(9999.-time/4.,time/4.)));
 
         r = vec2(fbm( p + 4.0*q + vec2(1.7,9.2) ),
-                      fbm( p + 4.0*q + vec2(8.3+time,2000.8-time)));
+                      fbm( p + 4.0*q + vec2(time,9999.-time)));
 
         return fbm(p + 4.0*r);
     }
@@ -95,24 +97,44 @@
         vec2 o, n;
         float f = pattern(seed, o, n);
         vec3 col = vec3(f, o.x, n.x);
-        col = mix(col, vec3(0.0,0.2,0.4), 0.5 * smoothstep(1.2, 1.3, abs(n.y) + abs(n.x)));
+
         col *= f*2.0;
         col = 1.0 - col;
         col *= col;
         color = vec4(col,1.0);
     }`
-    const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-    const program = createProgram(gl, vertexShader, fragmentShader);
+    const program = createProgram(
+        gl,
+        createShader(gl, gl.VERTEX_SHADER, vertexShaderSource),
+        createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource));
     gl.useProgram(program);
-    setPositions(program);
+    setPositions();
     const resolutionUniformLocation = gl.getUniformLocation(program, 'resolution');
     const timeUniform = gl.getUniformLocation(program, "time");
     let resized = true;
     window.onresize = () => resized = true;
-    window.requestAnimationFrame(render)
+    window.requestAnimationFrame(render);
+    
+    function getSearchParams(param, defaultValue) {
+        const url = new URL(window.location.href);
+        const params = url.searchParams;
+        if (!params.has(param)) {
+            params.set(param, defaultValue);
+            window.history.replaceState({}, "", `${url.pathname}?${params}`);
+        }
+        return (params.get(param));
+    }
 
     function render(timestamp) {
+        updateUniforms(timestamp);
+        const primitiveType = gl.TRIANGLES;
+        const offset = 0;
+        const count = 6;
+        gl.drawArrays(primitiveType, offset, count);
+        window.requestAnimationFrame(render)
+    }
+
+    function updateUniforms(timestamp) {
         if (resized) {
             resized = false;
             const size = getExactClientSize(canvas);
@@ -122,12 +144,6 @@
             gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
         }
         gl.uniform1f(timeUniform, timestamp / 10000);
-
-        const primitiveType = gl.TRIANGLES;
-        const offset = 0;
-        const count = 6;
-        gl.drawArrays(primitiveType, offset, count);
-        window.requestAnimationFrame(render)
     }
 
     function getExactClientSize(element) {
@@ -160,7 +176,7 @@
         return program;
     }
 
-    function setPositions(program) {
+    function setPositions() {
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
