@@ -31,7 +31,7 @@ function render(timestamp) {
 
 function updateUniforms(timestamp) {
     if (resized) {
-        resized = false;
+        resized = false
         const size = getExactClientSize(shaderCanvas)
         shaderCanvas.width = Math.round(size.width * window.devicePixelRatio)
         shaderCanvas.height = Math.round(size.height * window.devicePixelRatio)
