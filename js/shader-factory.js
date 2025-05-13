@@ -38,7 +38,7 @@ function updateUniforms(timestamp) {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
         gl.uniform2f(resolutionUniformLocation, shaderCanvas.width, shaderCanvas.height)
     }
-    gl.uniform1f(timeUniform, timestamp / 10000)
+    gl.uniform1f(timeUniform, timestamp / 1000)
 }
 
 function getExactClientSize(element) {

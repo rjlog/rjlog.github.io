@@ -52,9 +52,9 @@
         vec2 interpolation = smoothstep(0., 1., fractional_part);
 
         // Mix 4 corners percentages
-        return mix(a, b, interpolation.x) +
-        (c - a)* interpolation.y * (1.0 - interpolation.x) +
-        (d - b) * interpolation.x * interpolation.y;
+        return mix(a, b, interpolation.x)
+        + (c - a) * interpolation.y * (1.0 - interpolation.x)
+        + (d - b) * interpolation.x * interpolation.y;
     }
 
     float fractal_brownian(vec2 x)
@@ -76,6 +76,7 @@
 
     float pattern(vec2 position, out vec2 distortion_a, out vec2 distortion_b)
     {
+        float time = time / 10.;
         distortion_a = vec2(fractal_brownian(position),
         fractal_brownian(position + vec2(9999. - time / 4., time / 4.)));
 
@@ -92,7 +93,7 @@
         float pattern = pattern(position, distortion_a, distortion_b);
         vec3 color = vec3(pattern, distortion_a.x, distortion_b.x);
 
-        color *= pattern*2.0;
+        color *= pattern * 2.0;
         color = 1.0 - color;
         color *= color;
         color_rgba = vec4(color, 1.0);
