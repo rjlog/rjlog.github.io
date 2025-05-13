@@ -10,10 +10,6 @@
     void main() {
       gl_Position = vec4(position * 2.0 - 1.0, 0, 1.0);
     }`
-    const octaves = getSearchParams("octaves", "8")
-    const self_similarity = getSearchParams("selfsimilarity", "1.0")
-    const frequency = getSearchParams("frequency", "1.0")
-    const scale = getSearchParams("scale", "7.0")
     // language=GLSL
     const fragmentShaderSource = `#version 300 es
     #define OCTAVES ${octaves}
